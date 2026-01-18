@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faction Chain Claims</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #00d4ff;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-section, .claims-section {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: #0f0f23;
+            color: #eee;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+
+        button {
+            background: #00d4ff;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #00b8e0;
+        }
+
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #444;
+            color: #eee;
+        }
+
+        .btn-secondary:hover {
+            background: #555;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: #fff;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .user-info {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info span {
+            color: #00d4ff;
+        }
+
+        .chain-info {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .chain-count {
+            font-size: 32px;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        .chain-label {
+            font-size: 14px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        .chain-timeout {
+            font-size: 14px;
+            color: #f39c12;
+            margin-top: 10px;
+        }
+
+        .chain-timeout.warning {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .chain-cooldown {
+            font-size: 14px;
+            color: #e74c3c;
+            margin-top: 10px;
+        }
+
+        .claim-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .claim-input input {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .claims-list {
+            border: 1px solid #333;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .claim-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #333;
+            background: #0f0f23;
+        }
+
+        .claim-item:last-child {
+            border-bottom: none;
+        }
+
+        .claim-item:hover {
+            background: #1a1a3e;
+        }
+
+        .claim-hit {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00d4ff;
+            min-width: 60px;
+        }
+
+        .claim-user {
+            color: #aaa;
+            flex: 1;
+            margin-left: 15px;
+        }
+
+        .claim-time {
+            color: #666;
+            font-size: 12px;
+            margin-right: 15px;
+        }
+
+        .no-claims {
+            padding: 30px;
+            text-align: center;
+            color: #666;
+        }
+
+        .error {
+            background: #5c1a1a;
+            color: #ff6b6b;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .status {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .status.connected {
+            color: #2ecc71;
+        }
+
+        .status.disconnected {
+            color: #e74c3c;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Faction Chain Claims</h1>
+
+    <div id="login-section" class="login-section">
+        <div id="error" class="error hidden"></div>
+        <label for="api-key">Torn API Key</label>
+        <input type="password" id="api-key" placeholder="Enter your torn.com API key">
+        <p class="help-text">Your API key needs "Basic" access. Get one from Settings > API Key on torn.com</p>
+        <button id="login-btn" onclick="login()">Login</button>
+    </div>
+
+    <div id="claims-section" class="claims-section hidden">
+        <div class="user-info">
+            <div>
+                <strong id="user-name"></strong> - <span id="faction-name"></span>
+            </div>
+            <button class="btn-secondary" onclick="logout()">Logout</button>
+        </div>
+
+        <div class="chain-info">
+            <div class="chain-count" id="chain-count">--</div>
+            <div class="chain-label">Current Chain</div>
+            <div class="chain-timeout" id="chain-timeout"></div>
+        </div>
+
+        <div class="claim-input">
+            <input type="text" id="claim-input" placeholder="e.g., 55 or 55-60" onkeypress="handleKeyPress(event)">
+            <button onclick="addClaim()">Claim</button>
+        </div>
+
+        <div id="claims-list" class="claims-list">
+            <div class="no-claims">No claims yet</div>
+        </div>
+
+        <div id="ws-status" class="status disconnected">Connecting...</div>
+    </div>
+
+    <script>
+        let apiKey = null;
+        let userId = null;
+        let factionId = null;
+        let ws = null;
+        let claims = [];
+        let chainPollInterval = null;
+
+        // Check for stored API key on load
+        window.onload = function() {
+            const storedKey = localStorage.getItem('tornApiKey');
+            if (storedKey) {
+                document.getElementById('api-key').value = storedKey;
+                login();
+            }
+        };
+
+        async function login() {
+            const key = document.getElementById('api-key').value.trim();
+            if (!key) {
+                showError('Please enter an API key');
+                return;
+            }
+
+            const btn = document.getElementById('login-btn');
+            btn.disabled = true;
+            btn.textContent = 'Logging in...';
+            hideError();
+
+            try {
+                const response = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: {
+                        'X-API-Key': key
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Login failed');
+                }
+
+                apiKey = key;
+                userId = data.user_id;
+                factionId = data.faction_id;
+
+                localStorage.setItem('tornApiKey', key);
+
+                document.getElementById('user-name').textContent = data.name;
+                document.getElementById('faction-name').textContent = data.faction_name;
+
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('claims-section').classList.remove('hidden');
+
+                await loadClaims();
+                await loadChainInfo();
+                connectWebSocket();
+                startChainPolling();
+
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Login';
+            }
+        }
+
+        function logout() {
+            apiKey = null;
+            userId = null;
+            factionId = null;
+            claims = [];
+            localStorage.removeItem('tornApiKey');
+
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+
+            if (chainPollInterval) {
+                clearInterval(chainPollInterval);
+                chainPollInterval = null;
+            }
+
+            document.getElementById('api-key').value = '';
+            document.getElementById('login-section').classList.remove('hidden');
+            document.getElementById('claims-section').classList.add('hidden');
+        }
+
+        async function loadClaims() {
+            try {
+                const response = await fetch('/api/claims', {
+                    headers: {
+                        'X-API-Key': apiKey
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load claims');
+                }
+
+                claims = await response.json();
+                renderClaims();
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        async function loadChainInfo() {
+            try {
+                const response = await fetch('/api/chain', {
+                    headers: {
+                        'X-API-Key': apiKey
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load chain info');
+                }
+
+                const data = await response.json();
+                updateChainDisplay(data);
+
+                // Reload claims in case some were deleted by the server
+                await loadClaims();
+            } catch (err) {
+                console.error('Chain info error:', err.message);
+            }
+        }
+
+        function updateChainDisplay(chainInfo) {
+            document.getElementById('chain-count').textContent = chainInfo.current;
+
+            const timeoutEl = document.getElementById('chain-timeout');
+
+            if (chainInfo.cooldown > 0) {
+                const mins = Math.floor(chainInfo.cooldown / 60);
+                const secs = chainInfo.cooldown % 60;
+                timeoutEl.textContent = `Cooldown: ${mins}:${secs.toString().padStart(2, '0')}`;
+                timeoutEl.className = 'chain-timeout';
+            } else if (chainInfo.timeout > 0) {
+                const mins = Math.floor(chainInfo.timeout / 60);
+                const secs = chainInfo.timeout % 60;
+                timeoutEl.textContent = `Timeout: ${mins}:${secs.toString().padStart(2, '0')}`;
+                timeoutEl.className = chainInfo.timeout < 60 ? 'chain-timeout warning' : 'chain-timeout';
+            } else if (chainInfo.current === 0) {
+                timeoutEl.textContent = 'No active chain';
+                timeoutEl.className = 'chain-timeout';
+            } else {
+                timeoutEl.textContent = '';
+            }
+        }
+
+        function startChainPolling() {
+            // Poll chain info every 10 seconds
+            chainPollInterval = setInterval(loadChainInfo, 10000);
+        }
+
+        function renderClaims() {
+            const container = document.getElementById('claims-list');
+
+            if (claims.length === 0) {
+                container.innerHTML = '<div class="no-claims">No claims yet</div>';
+                return;
+            }
+
+            // Sort by hit_number
+            claims.sort((a, b) => a.hit_number - b.hit_number);
+
+            container.innerHTML = claims.map(claim => {
+                const time = new Date(claim.claimed_at).toLocaleTimeString();
+                const isOwn = claim.claimed_by === userId;
+
+                return `
+                    <div class="claim-item" data-id="${claim.id}">
+                        <span class="claim-hit">${claim.hit_number}</span>
+                        <span class="claim-user">${claim.claimed_by_name}</span>
+                        <span class="claim-time">${time}</span>
+                        ${isOwn ? `<button class="btn-danger" onclick="deleteClaim(${claim.id})">Delete</button>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function addClaim() {
+            const input = document.getElementById('claim-input');
+            const value = input.value.trim();
+
+            if (!value) return;
+
+            // Parse input: "55" or "55-60"
+            let startHit, endHit = null;
+
+            if (value.includes('-')) {
+                const parts = value.split('-');
+                startHit = parseInt(parts[0].trim());
+                endHit = parseInt(parts[1].trim());
+
+                if (isNaN(startHit) || isNaN(endHit)) {
+                    showError('Invalid format. Use "55" or "55-60"');
+                    return;
+                }
+            } else {
+                startHit = parseInt(value);
+                if (isNaN(startHit)) {
+                    showError('Invalid format. Use "55" or "55-60"');
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch('/api/claims', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify({
+                        start_hit: startHit,
+                        end_hit: endHit
+                    })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.detail || 'Failed to add claim');
+                }
+
+                input.value = '';
+                hideError();
+                // Claims will be added via WebSocket
+
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        async function deleteClaim(claimId) {
+            try {
+                const response = await fetch(`/api/claims/${claimId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-API-Key': apiKey
+                    }
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.detail || 'Failed to delete claim');
+                }
+
+                hideError();
+                // Claim will be removed via WebSocket
+
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                addClaim();
+            }
+        }
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/${factionId}`;
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = function() {
+                document.getElementById('ws-status').textContent = 'Connected - Live updates enabled';
+                document.getElementById('ws-status').className = 'status connected';
+            };
+
+            ws.onclose = function() {
+                document.getElementById('ws-status').textContent = 'Disconnected - Reconnecting...';
+                document.getElementById('ws-status').className = 'status disconnected';
+
+                // Reconnect after 3 seconds
+                setTimeout(() => {
+                    if (apiKey) {
+                        connectWebSocket();
+                    }
+                }, 3000);
+            };
+
+            ws.onerror = function() {
+                document.getElementById('ws-status').textContent = 'Connection error';
+                document.getElementById('ws-status').className = 'status disconnected';
+            };
+
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+
+                if (data.type === 'claim_added') {
+                    // Check if claim already exists (from our own POST)
+                    const exists = claims.find(c => c.id === data.claim.id);
+                    if (!exists) {
+                        claims.push(data.claim);
+                        renderClaims();
+                    }
+                } else if (data.type === 'claim_deleted') {
+                    claims = claims.filter(c => c.id !== data.claim_id);
+                    renderClaims();
+                }
+            };
+        }
+
+        function showError(message) {
+            const el = document.getElementById('error');
+            el.textContent = message;
+            el.classList.remove('hidden');
+        }
+
+        function hideError() {
+            document.getElementById('error').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
